@@ -7,7 +7,7 @@ import { NotFoundError } from '@/utils/errors';
 import { Caption } from '../captions';
 
 // Thanks Nemo for this API, and Custom for hosting!
-const BASE_URL = 'https://fed-api.up.railway.app';
+const BASE_URL = 'https://fed-api-js.up.railway.app';
 
 // this is so fucking useless
 const languageMap: Record<string, string> = {
