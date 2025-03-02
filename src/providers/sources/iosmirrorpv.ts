@@ -9,7 +9,7 @@ import { NotFoundError } from '@/utils/errors';
 // See how to set this up yourself: https://gist.github.com/Pasithea0/9ba31d16580800e899c245a4379e902b
 
 const baseUrl = 'https://iosmirror.cc';
-const baseUrl2 = 'https://vercel-sucks.up.railway.app/iosmirror.cc:443/pv';
+const baseUrl2 = 'https://prox-beige.vercel.app/iosmirror.cc:443/pv';
 
 type metaT = {
   year: string;
@@ -108,7 +108,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
 
   if (!autoFile) throw new Error('Failed to fetch playlist');
 
-  const playlist = `https://vercel-sucks.up.railway.app/m3u8-proxy?url=${encodeURIComponent(`${baseUrl}${autoFile}`)}&headers=${encodeURIComponent(JSON.stringify({ referer: baseUrl, cookie: makeCookieHeader({ hd: 'on' }) }))}`;
+  const playlist = `https://prox-beige.vercel.app/m3u8-proxy?url=${encodeURIComponent(`${baseUrl}${autoFile}`)}&headers=${encodeURIComponent(JSON.stringify({ referer: baseUrl, cookie: makeCookieHeader({ hd: 'on' }) }))}`;
   ctx.progress(90);
 
   return {
@@ -130,7 +130,7 @@ export const iosmirrorPVScraper = makeSourcerer({
   name: 'PrimeMirror',
   rank: 183,
   // disabled: !!isIos,
-  disabled: true,
+  disabled: false,
   flags: [flags.CORS_ALLOWED],
   scrapeMovie: universalScraper,
   scrapeShow: universalScraper,
