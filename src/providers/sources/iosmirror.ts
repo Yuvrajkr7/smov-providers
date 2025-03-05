@@ -16,7 +16,7 @@ const fetchNetflixCookie = async (): Promise<string> => {
       throw new Error('Failed to fetch cookie');
     }
     const data = await response.json();
-    return data.cookie; // assuming the structure has a "cookie" field
+    return response.data.netflixCookie.cookie; // Changed line
   } catch (error) {
     throw new Error(`Error fetching Netflix cookie: ${error.message}`);
   }
