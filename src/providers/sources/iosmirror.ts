@@ -34,19 +34,25 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
   ctx.progress(30);
 
   let metaRes;
-  let id = searchRes.searchResult.find(async (x) => {
+  let id: string | undefined;
+  
+  for (const x of searchRes.searchResult as { id: string; t: string }[]) {
     metaRes = await getMeta(x.id);
-    return (
+    if (
       compareTitle(x.t, ctx.media.title) &&
       (Number(metaRes.year) === ctx.media.releaseYear || metaRes.type === (ctx.media.type === 'movie' ? 'm' : 't'))
-    );
-  })?.id;
+    ) {
+      id = x.id;
+      break;
+    }
+  }
+
   if (!id) throw new NotFoundError('No watchable item found');
 
   if (ctx.media.type === 'show') {
     metaRes = await getMeta(id);
     const showMedia = ctx.media;
-    const seasonId = metaRes?.season.find((x) => Number(x.s) === showMedia.season.number)?.id;
+    const seasonId = metaRes?.season.find((x: { s: string; id: string }) => Number(x.s) === showMedia.season.number)?.id;
     if (!seasonId) throw new NotFoundError('Season not available');
 
     const episodeRes = await ctx.proxiedFetcher('/episodes.php', {
@@ -54,8 +60,10 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
       query: { s: seasonId, series: id },
       headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
     });
+
     let episodes = [...episodeRes.episodes];
     let currentPage = 2;
+    
     while (episodeRes.nextPageShow === 1) {
       const nextPageRes = await ctx.proxiedFetcher('/episodes.php', {
         baseUrl: baseUrl2,
@@ -66,9 +74,11 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
       episodeRes.nextPageShow = nextPageRes.nextPageShow;
       currentPage++;
     }
+
     const episodeId = episodes.find(
-      (x) => x.ep === `E${showMedia.episode.number}` && x.s === `S${showMedia.season.number}`,
+      (x: { ep: string; s: string; id: string }) => x.ep === `E${showMedia.episode.number}` && x.s === `S${showMedia.season.number}`,
     )?.id;
+
     if (!episodeId) throw new NotFoundError('Episode not available');
     id = episodeId;
   }
@@ -78,10 +88,11 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
     query: { id },
     headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
   });
+
   ctx.progress(50);
 
-  let autoFile = playlistRes[0].sources.find((source) => source.label === 'Auto')?.file;
-  if (!autoFile) autoFile = playlistRes[0].sources.find((source) => source.label === 'Full HD')?.file;
+  let autoFile = playlistRes[0].sources.find((source: { file: string; label: string }) => source.label === 'Auto')?.file;
+  if (!autoFile) autoFile = playlistRes[0].sources.find((source: { file: string; label: string }) => source.label === 'Full HD')?.file;
   if (!autoFile) autoFile = playlistRes[0].sources[0]?.file;
   if (!autoFile) throw new Error('Failed to fetch playlist');
 
