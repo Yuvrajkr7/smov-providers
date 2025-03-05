@@ -8,7 +8,6 @@ import { NotFoundError } from '@/utils/errors';
 const baseUrl = 'https://iosmirror.cc';
 const baseUrl2 = 'https://prox-beige.vercel.app/iosmirror.cc:443';
 
-// Function to fetch the cookie from the URL
 const fetchNetflixCookie = async (): Promise<string> => {
   try {
     const response = await fetch('https://anshu78780.github.io/json/cookie.json');
@@ -16,35 +15,39 @@ const fetchNetflixCookie = async (): Promise<string> => {
       throw new Error('Failed to fetch cookie');
     }
     const data = await response.json();
-    return response.data.netflixCookie.cookie; // Changed line
-  } catch (error) {
-    throw new Error(`Error fetching Netflix cookie: ${error.message}`);
+    return data.netflixCookie.cookie; // Accessing cookie properly after parsing the response
+  } catch (error: unknown) {  // Explicitly declare 'error' as 'unknown'
+    if (error instanceof Error) {
+      throw new Error(`Error fetching Netflix cookie: ${error.message}`);
+    } else {
+      throw new Error('An unknown error occurred while fetching the Netflix cookie');
+    }
   }
 };
 
 const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Promise<SourcererOutput> => {
-  // Fetch the Netflix cookie dynamically
-  const netflixCookie = await fetchNetflixCookie();
-  const cookieHeader = makeCookieHeader({ cookie: netflixCookie });
+  const hash = {
+    t_hash: 'c5d48c6a6dce8e5ca9288f62f89d75a0::1741083218::ni',
+    addhash: '1fc9373765abb7305bc558888d000a32::ec81fe71fe90a9fd3e1eb70faf2925c6::1741160824::ni',
+    t_hash_t: '2f636d29a359d65c4d6e657dd018040d::e38f6f3618376ce0e61a0f0964bed333::1741160862::ni'
+  };
 
   ctx.progress(10);
 
   const searchRes = await ctx.proxiedFetcher('/search.php', {
     baseUrl: baseUrl2,
     query: { s: ctx.media.title },
-    headers: { cookie: cookieHeader },
+    headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
   });
-
   if (searchRes.status !== 'y' || !searchRes.searchResult) throw new NotFoundError(searchRes.error);
 
   async function getMeta(id: string) {
     return ctx.proxiedFetcher('/post.php', {
       baseUrl: baseUrl2,
       query: { id },
-      headers: { cookie: cookieHeader },
+      headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
     });
   }
-
   ctx.progress(30);
 
   let metaRes;
@@ -72,7 +75,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
     const episodeRes = await ctx.proxiedFetcher('/episodes.php', {
       baseUrl: baseUrl2,
       query: { s: seasonId, series: id },
-      headers: { cookie: cookieHeader },
+      headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
     });
 
     let episodes = [...episodeRes.episodes];
@@ -82,7 +85,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
       const nextPageRes = await ctx.proxiedFetcher('/episodes.php', {
         baseUrl: baseUrl2,
         query: { s: seasonId, series: id, page: currentPage.toString() },
-        headers: { cookie: cookieHeader },
+        headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
       });
       episodes = [...episodes, ...nextPageRes.episodes];
       episodeRes.nextPageShow = nextPageRes.nextPageShow;
@@ -97,12 +100,10 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
     id = episodeId;
   }
 
-  // Ensure id is defined before using it
-  if (!id) throw new NotFoundError('No valid ID found for the item.');
   const playlistRes = await ctx.proxiedFetcher('/playlist.php?', {
     baseUrl: baseUrl2,
     query: { id },
-    headers: { cookie: cookieHeader },
+    headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
   });
 
   ctx.progress(50);
@@ -112,7 +113,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
   if (!autoFile) autoFile = playlistRes[0].sources[0]?.file;
   if (!autoFile) throw new Error('Failed to fetch playlist');
 
-  const playlist = `https://prox-beige.vercel.app/m3u8-proxy?url=${encodeURIComponent(`${baseUrl}${autoFile}`)}&headers=${encodeURIComponent(JSON.stringify({ referer: baseUrl, cookie: cookieHeader }))}`;
+  const playlist = `https://prox-beige.vercel.app/m3u8-proxy?url=${encodeURIComponent(`${baseUrl}${autoFile}`)}&headers=${encodeURIComponent(JSON.stringify({ referer: baseUrl, cookie: makeCookieHeader({ hd: 'on' }) }))}`;
   ctx.progress(90);
 
   return {
