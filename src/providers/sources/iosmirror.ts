@@ -14,14 +14,15 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
     addhash: '1fc9373765abb7305bc558888d000a32::ec81fe71fe90a9fd3e1eb70faf2925c6::1741160824::ni',
     t_hash_t: '2f636d29a359d65c4d6e657dd018040d::e38f6f3618376ce0e61a0f0964bed333::1741160862::ni'
   };
-  
+
   ctx.progress(10);
-  
+
   const searchRes = await ctx.proxiedFetcher('/search.php', {
     baseUrl: baseUrl2,
     query: { s: ctx.media.title },
     headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
   });
+
   if (searchRes.status !== 'y' || !searchRes.searchResult) throw new NotFoundError(searchRes.error);
 
   async function getMeta(id: string) {
@@ -31,11 +32,12 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
       headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
     });
   }
+
   ctx.progress(30);
 
   let metaRes;
   let id: string | undefined;
-  
+
   for (const x of searchRes.searchResult as { id: string; t: string }[]) {
     metaRes = await getMeta(x.id);
     if (
@@ -63,7 +65,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
 
     let episodes = [...episodeRes.episodes];
     let currentPage = 2;
-    
+
     while (episodeRes.nextPageShow === 1) {
       const nextPageRes = await ctx.proxiedFetcher('/episodes.php', {
         baseUrl: baseUrl2,
@@ -83,6 +85,8 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
     id = episodeId;
   }
 
+  
+  if (!id) throw new NotFoundError('No valid ID found for the item.');
   const playlistRes = await ctx.proxiedFetcher('/playlist.php?', {
     baseUrl: baseUrl2,
     query: { id },
