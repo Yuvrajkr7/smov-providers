@@ -102,7 +102,7 @@ const universalScraper = async (ctx: ShowScrapeContext | MovieScrapeContext): Pr
 
   const playlistRes = await ctx.proxiedFetcher('/playlist.php?', {
     baseUrl: baseUrl2,
-    query: { id },
+    query: { id: id! }, // Use non-null assertion since 'id' is now guaranteed to be defined
     headers: { cookie: makeCookieHeader({ ...hash, hd: 'on' }) },
   });
 
